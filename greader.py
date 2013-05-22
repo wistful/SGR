@@ -49,8 +49,8 @@ class GReader(object):
                 'Authorization': 'GoogleLogin auth={token}'.format(
                     token=token)}
         except (urllib2.HTTPError, urllib2.URLError) as exc:
-            logging.error("Login Failed.", extra={'code': exc.code,
-                                                  'message': exc.msg})
+            logging.error("Login Failed.", extra={'err_code': exc.code,
+                                                  'err_message': exc.msg})
         except AttributeError:
             logging.error("Token Not Found in the response.",
                           extra={'response': resp})
@@ -79,7 +79,8 @@ class GReader(object):
                 self._subscriptions = json.loads(resp)['subscriptions']
             except (urllib2.HTTPError, urllib2.URLError) as exc:
                 logging.error("Failed getting subscriptions.",
-                              extra={'code': exc.code, 'message': exc.msg})
+                              extra={'err_code': exc.code,
+                                     'err_message': exc.msg})
             except KeyError:
                 logging.error("Subscriptions not found in the response.",
                               extra={'response': resp})
