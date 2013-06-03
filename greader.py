@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__version__ = '1.1'
+__author__ = 'wistful'
+__url__ = 'https://github.com/wistful/SGR'
+__license__ = 'The MIT License'
+__copyright__ = '2013, wistful <wst.public.mail@gmail.com>'
+
 import logging
 import urllib2
 
@@ -15,11 +21,6 @@ SUBSCRIPTIONS_LIST_URL = 'http://www.google.com/reader/api/0/subscription/list'
 SUBSCRIPTION_URL = 'http://www.google.com/reader/api/0/stream/contents/feed/'
 STARRED_URL = r"http://www.google.com/reader/api/0/stream/contents/user/-/" \
     "state/com.google/starred"
-
-
-__version__ = '1.1'
-__author__ = 'wistful'
-__url__ = 'https://github.com/wistful/SGR'
 
 
 class GReader(object):
