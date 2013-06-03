@@ -13,6 +13,13 @@ import json
 AUTH_URL = 'https://www.google.com/accounts/ClientLogin'
 SUBSCRIPTIONS_LIST_URL = 'http://www.google.com/reader/api/0/subscription/list'
 SUBSCRIPTION_URL = 'http://www.google.com/reader/api/0/stream/contents/feed/'
+STARRED_URL = r"http://www.google.com/reader/api/0/stream/contents/user/-/" \
+    "state/com.google/starred"
+
+
+__version__ = '1.1'
+__author__ = 'wistful'
+__url__ = 'https://github.com/wistful/SGR'
 
 
 class GReader(object):
@@ -66,7 +73,7 @@ class GReader(object):
     @property
     def subscriptions(self):
         """
-        return subscriptions
+        return list of subscriptions
         """
         if not self._subscriptions:
             req_data = url_encode({'output': 'json'})
@@ -78,17 +85,16 @@ class GReader(object):
                 resp = urllib2.urlopen(req).read()
                 self._subscriptions = json.loads(resp)['subscriptions']
             except (urllib2.HTTPError, urllib2.URLError) as exc:
-                logging.error("Failed getting subscriptions.",
-                              extra={'err_code': exc.code,
-                                     'err_message': exc.msg})
+                logging.error("Failed getting subscriptions: %s %s",
+                              exc.code, exc.msg)
             except KeyError:
                 logging.error("Subscriptions not found in the response.",
                               extra={'response': resp})
         return self._subscriptions
 
-    def posts(self, subscription_url, count=20):
+    def get_items(self, url, count=20):
         """
-        return posts of subscriptions
+        return return items from stream by url
         """
         req_param = {'r': 'n', 'n': count, 'client': 'scroll'}
         continuation = None
@@ -96,12 +102,14 @@ class GReader(object):
             if continuation:
                 req_param['c'] = continuation
             req_data = url_encode(req_param)
-            url = "{subscription_url}{subscription}?{req_data}".format(
-                subscription_url=SUBSCRIPTION_URL,
-                subscription=url_quote(subscription_url, ''),
-                req_data=req_data)
-            req = urllib2.Request(url, headers=self._header)
-            resp = urllib2.urlopen(req).read()
+            feed_url = "{url}?{req_data}".format(url=url, req_data=req_data)
+            req = urllib2.Request(feed_url, headers=self._header)
+            try:
+                resp = urllib2.urlopen(req).read()
+            except (urllib2.HTTPError, urllib2.URLError) as exc:
+                logging.error("Failed getting stream items: %s %s",
+                              exc.code, exc.msg)
+                break
             feed_posts = json.loads(resp)
 
             for post in feed_posts['items']:
@@ -110,6 +118,23 @@ class GReader(object):
             continuation = feed_posts.get('continuation', None)
             if not continuation:
                 break
+
+    def posts(self, subscription_url, count=20):
+        """
+        return posts of subscriptions
+        """
+        url = "{subscription_url}{subscription}".format(
+            subscription_url=SUBSCRIPTION_URL,
+            subscription=url_quote(subscription_url, '')
+        )
+        return self.get_items(url, count)
+
+    def starred(self, count=20):
+        """
+        return starred posts
+        """
+        return self.get_items(STARRED_URL)
+
 
 if __name__ == '__main__':
     g = GReader('email', 'password')
@@ -122,6 +147,6 @@ if __name__ == '__main__':
     for i, post in enumerate(g.posts(subscription_url)):
         date = {'updated': post['updated'], 'published': post['published']}
         url = post['alternate'][0]['href']
-        title = post['title']
+        title = post.get('title', 'unknown')
         print('{index}, {title}, {url}'.format(
               index=i, date=date, title=title.encode('utf8'), url=url))
